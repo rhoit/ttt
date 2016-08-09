@@ -81,8 +81,7 @@ function mouse_read_pos {
 
 function win_case {
     board_update
-    board_banner "YOU WON"
-    >&3 echo YOU WON
+    board_banner YOU $(let "$1" && echo "WON" || echo "LOSE")
     exit
 }
 
@@ -103,12 +102,12 @@ function check_endgame {
             test -z ${board[rindex]} && rval="a$i$j" || rval=${board[rindex]}
 
             ## horizontals: board[i][0] <cmp> board[i][j]
-            [[ $itile != $rval ]] && let fail_hor++
+            [[ "$itile" != $rval ]] && let fail_hor++
 
             # verticle: board[0][i] <cmp> board[j][i]
             let cindex="j * BOARD_SIZE + i"
             test -z ${board[cindex]} && cval="a$j$i" || cval=${board[cindex]}
-            [[ "" != $cval ]] && let fail_ver++
+            [[ "${board[i]}" != $cval ]] && let fail_ver++
 
             ## left diagonal: board[0][0] <cmp> board[i][j]
             (( i == j )) &&  [[ "$ldia" != $rval ]] && let fail_ldia++
@@ -118,11 +117,39 @@ function check_endgame {
 
             let rindex++
         done
-        (( fail_hor == 0 )) && win_case
-        (( fail_ver == 0 )) && win_case
+        (( fail_hor == 0 )) && {
+            >&3 echo HORZ $i WIN
+            win_case $rval
+        }
+        (( fail_ver == 0 )) && {
+            >&3 echo VERT $i WIN
+            win_case $cval
+        }
     done
-    (( fail_ldia == 0 )) && win_case
-    (( fail_rdia == 0 )) && win_case
+    (( fail_ldia == 0 )) && {
+        >&3 echo LEFT DIAGONAL WIN
+        win_case $ldia
+    }
+    (( fail_rdia == 0 )) && {
+        >&3 echo RIGHT DIAGONAL WIN
+        win_case $rdia
+    }
+}
+
+
+function random_move {
+    while (( tiles < N )); do
+        let index=RANDOM%N
+        [[ ${board[index]} == "" ]] && {
+            let board[index]=0
+            let tiles++
+            break
+        }
+    done
+}
+
+
+function computer {
 }
 
 
@@ -152,7 +179,9 @@ function game_loop {
         let tiles++
         board_tput_status; status
         check_endgame
-        test $moves == $N && {
+        random_move
+        check_endgame
+        test $tiles == $N && {
             board_update
             board_banner 'DRAW'
             exit

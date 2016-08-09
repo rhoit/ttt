@@ -2,7 +2,7 @@
 #+DATE: Sunday, Jul 31 2016
 #+STARTUP: showall
 
-Bash implementation of classic tic-tac-toe.
+Bash implementation of classic tic-tac-toe with basic ai.
 * Installation
 
 ** Manual
@@ -20,4 +20,12 @@ Bash implementation of classic tic-tac-toe.
       $ ./configure
       $ sudo make install
     #+end_src
+
+* Playing
+
+  #+BEGIN_SRC language
+    $ ttt
+  #+END_SRC
+
+  use mouse to play.
 
