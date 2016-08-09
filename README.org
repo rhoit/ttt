@@ -3,3 +3,21 @@
 #+STARTUP: showall
 
 Bash implementation of classic tic-tac-toe.
+* Installation
+
+** Manual
+
+   Download the latest verion from [[https://github.com/rhoit/ttt/archive/master.zip][zip]] or [[https://github.com/rhoit/ttt/archive/master.tar.gz][tar]] clone the repo.
+
+   | Requirement | Type     |
+   |-------------+----------|
+   | bash        | depends  |
+   | [[https://github.com/bekar/ASCII-board][ASCII-board]] | depends  |
+   | figlet      | optional |
+
+    #+begin_src bash
+      $ cd path-to-ttt
+      $ ./configure
+      $ sudo make install
+    #+end_src
+
