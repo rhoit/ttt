@@ -1,0 +1,5 @@
+#+TITLE: tic-tac-toe-puzzle
+#+DATE: Sunday, Jul 31 2016
+#+STARTUP: showall
+
+Bash implementation of classic tic-tac-toe.
