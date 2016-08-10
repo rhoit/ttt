@@ -79,61 +79,57 @@ function mouse_read_pos {
 }
 
 
-function win_case {
+function win_case { # $1: type  $2: player
     board_update
-    board_banner YOU $(let "$1" && echo "WON" || echo "LOSE")
+    >&3 echo COMPLETE by $1
+    board_banner YOU $(let "$2" && echo "WON" || echo "LOSE")
     exit
 }
 
 
 function check_endgame {
+    fail_ldia=0 fail_rdia=0
     local rindex=0 cindex=0
-    local fail_ldia=0 fail_rdia=0
     local rval=0 cval=0
 
-    local ldia="${board[0]}" rdia
-    let rdia="board[BOARD_SIZE-1]"
+    local ldia=${board[0]:-"a0"}
+    local max=$((BOARD_SIZE-1))
+    local rdia=${board[max]:-"a$max"}
 
     for ((i=0; i < BOARD_SIZE; i++)); do
         local itile=${board[rindex]}
         local fail_hor=0 fail_ver=0
         for ((j=0; j < BOARD_SIZE; j++)); do
             ## making unique
-            test -z ${board[rindex]} && rval="a$i$j" || rval=${board[rindex]}
+            rval=${board[rindex]:-"a$rindex"}
 
             ## horizontals: board[i][0] <cmp> board[i][j]
             [[ "$itile" != $rval ]] && let fail_hor++
 
             # verticle: board[0][i] <cmp> board[j][i]
             let cindex="j * BOARD_SIZE + i"
-            test -z ${board[cindex]} && cval="a$j$i" || cval=${board[cindex]}
+            cval=${board[cindex]:-"a$cindex"}
             [[ "${board[i]}" != $cval ]] && let fail_ver++
 
             ## left diagonal: board[0][0] <cmp> board[i][j]
-            (( i == j )) &&  [[ "$ldia" != $rval ]] && let fail_ldia++
+            (( i == j )) &&  [[ "$ldia" != $rval ]] && {
+                let fail_ldia++
+                ldia=${board[0]:-"$rval"}
+            }
 
             ## right diagonal: board[0][max] <cmp> board[i][BOARD_SIZE-j]
-            (( i + 1 == BOARD_SIZE - j )) && [[ "$rdia" != $rval ]] && let fail_rdia++
+            (( i + 1 == BOARD_SIZE - j )) && [[ "$rdia" != $rval ]] && {
+                let fail_rdia++
+                rdia=${board[0]:-"$rval"}
+            }
 
             let rindex++
         done
-        (( fail_hor == 0 )) && {
-            >&3 echo HORZ $i WIN
-            win_case $rval
-        }
-        (( fail_ver == 0 )) && {
-            >&3 echo VERT $i WIN
-            win_case $cval
-        }
-    done
-    (( fail_ldia == 0 )) && {
-        >&3 echo LEFT DIAGONAL WIN
-        win_case $ldia
-    }
-    (( fail_rdia == 0 )) && {
-        >&3 echo RIGHT DIAGONAL WIN
-        win_case $rdia
-    }
+        (( fail_hor == 0 )) && win_case "HORZONTAL $i" $rval
+        (( fail_ver == 0 )) && win_case "VERTICLE $i" $cval
+     done
+    (( fail_ldia == 0 )) && win_case "LEFT DIAGONAL" $ldia
+    (( fail_rdia == 0 )) && win_case "RIGHT DIAGONAL" $rdia
 }
 
 
@@ -150,6 +146,30 @@ function random_move {
 
 
 function computer {
+    if (( fail_ldia == 1 )); then
+        >&3 echo "almost LEFT DIAGONAL"
+        for ((i=0; i < BOARD_SIZE; i++)); do
+            local index=$((BOARD_SIZE*i+i))
+            test -z ${board[index]} && {
+                let board[index]=0
+                return
+            }
+        done
+    fi
+
+
+    if (( fail_rdia == 1 )); then
+        >&3 echo "almost RIGHT DIAGONAL"
+        for ((i=0; i < BOARD_SIZE; i++)); do
+            local index=$((BOARD_SIZE*i+BOARD_SIZE-1-i))
+            test -z ${board[index]} && {
+                let board[index]=0
+                return
+            }
+        done
+    fi
+
+    random_move
 }
 
 
@@ -179,13 +199,13 @@ function game_loop {
         let tiles++
         board_tput_status; status
         check_endgame
-        random_move
-        check_endgame
         test $tiles == $N && {
             board_update
             board_banner 'DRAW'
             exit
         }
+        computer
+        check_endgame
     done
 }
 
