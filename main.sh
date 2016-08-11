@@ -147,7 +147,8 @@ function check_endgame {
 
 function random_move {
     while (( tiles < N )); do
-        let index=RANDOM%N
+        local index=$((RANDOM%N))
+        # >&3 echo $index
         [[ ${board[index]} == "" ]] && {
             let board[index]=0
             let tiles++
@@ -164,9 +165,10 @@ function check_almost { #$1: count $2: index_func $3: msg
         >&3 echo "almost $msg"
         for ((i=0; i < BOARD_SIZE; i++)); do
             local index=$(($index_func))
-            # >&3 echo $index
+            >&3 echo $index
             test -z ${board[index]} && {
                 let board[index]=0
+                let tiles++
                 return 0
             }
         done
@@ -178,9 +180,9 @@ function check_almost { #$1: count $2: index_func $3: msg
 function computer {
     check_almost $fail_ldia "BOARD_SIZE*i+i" "LEFT DIAGONAL" && return
     check_almost $fail_rdia "BOARD_SIZE*i+M-i" "RIGHT DIAGONAL" && return
-    for ((i=0; i < BOARD_SIZE; i++)); do
-        check_almost ${fail_hor_array[i]} "BOARD_SIZE*$i+i" "HORIZONTAL $i" && return
-        check_almost ${fail_ver_array[i]} "BOARD_SIZE*i+$i" "VERTICLE $i" && return
+    for ((c=0; c < BOARD_SIZE; c++)); do
+        check_almost ${fail_hor_array[c]} "BOARD_SIZE*$c+i" "HORIZONTAL $c" && return
+        check_almost ${fail_ver_array[c]} "BOARD_SIZE*i+$c" "VERTICLE $c" && return
     done
     random_move
 }
@@ -212,14 +214,14 @@ function game_loop {
         let tiles++
         board_tput_status; status
         check_endgame
+        computer
+        >&3 echo
+        check_endgame
         test $tiles == $N && {
             board_update
             board_banner 'DRAW'
             exit
         }
-        computer
-        >&3 echo
-        check_endgame
     done
 }
 
