@@ -26,6 +26,12 @@ Bash implementation of classic tic-tac-toe with basic ai.
   #+BEGIN_SRC language
     $ ttt
   #+END_SRC
-
+  
+  Want to play infinity and beyond ? 
+ #+BEGIN_SRC bash
+   while ttt; do; echo "retrying again... LETS GO INSANE"; done
+ #+END_SRC
+ I guess, ~Ctrl + z~ is only way to exit and kill the program, do fg and ~Ctrl + c~ :P 
+ Yes, that's insane. Bet you can, beat this bash_AI
   use mouse to play.
 
