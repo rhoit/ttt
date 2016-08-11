@@ -89,27 +89,37 @@ function win_case { # $1: type  $2: player
 
 function check_endgame {
     fail_ldia=0 fail_rdia=0
+    fail_hor_array=() fail_ver_array=()
+
     local rindex=0 cindex=0
     local rval=0 cval=0
-
     local ldia=${board[0]:-"a0"}
-    local max=$((BOARD_SIZE-1))
-    local rdia=${board[max]:-"a$max"}
+    local rdia=${board[M]:-"a$M"}
 
     for ((i=0; i < BOARD_SIZE; i++)); do
-        local itile=${board[rindex]}
+        local hindex=$rindex vindex=$i
         local fail_hor=0 fail_ver=0
+        htile=${board[rindex]:-"a$rindex"}
+        vtile=${board[i]:-"a$i"}
+
         for ((j=0; j < BOARD_SIZE; j++)); do
             ## making unique
             rval=${board[rindex]:-"a$rindex"}
 
             ## horizontals: board[i][0] <cmp> board[i][j]
-            [[ "$itile" != $rval ]] && let fail_hor++
+            [[ "$htile" != $rval ]] && {
+                # >&3 echo hor $htile == $rval $rindex
+                let fail_hor++
+                htile=${board[hindex]:-"$rval"}
+            }
 
             # verticle: board[0][i] <cmp> board[j][i]
             let cindex="j * BOARD_SIZE + i"
             cval=${board[cindex]:-"a$cindex"}
-            [[ "${board[i]}" != $cval ]] && let fail_ver++
+            [[ "$vtile" != $cval ]] && {
+                let fail_ver++
+                vtile=${board[vindex]:-"$cval"}
+            }
 
             ## left diagonal: board[0][0] <cmp> board[i][j]
             (( i == j )) &&  [[ "$ldia" != $rval ]] && {
@@ -118,7 +128,7 @@ function check_endgame {
             }
 
             ## right diagonal: board[0][max] <cmp> board[i][BOARD_SIZE-j]
-            (( i + 1 == BOARD_SIZE - j )) && [[ "$rdia" != $rval ]] && {
+            (( i == M - j )) && [[ "$rdia" != $rval ]] && {
                 let fail_rdia++
                 rdia=${board[0]:-"$rval"}
             }
@@ -127,6 +137,8 @@ function check_endgame {
         done
         (( fail_hor == 0 )) && win_case "HORZONTAL $i" $rval
         (( fail_ver == 0 )) && win_case "VERTICLE $i" $cval
+        let fail_hor_array[i]=fail_hor
+        let fail_ver_array[i]=fail_ver
      done
     (( fail_ldia == 0 )) && win_case "LEFT DIAGONAL" $ldia
     (( fail_rdia == 0 )) && win_case "RIGHT DIAGONAL" $rdia
@@ -145,30 +157,31 @@ function random_move {
 }
 
 
+function check_almost { #$1: count $2: index_func $3: msg
+    # block or complete
+    local count=$1 index_func=$2 msg=$3
+    if (( count == 1 )); then
+        >&3 echo "almost $msg"
+        for ((i=0; i < BOARD_SIZE; i++)); do
+            local index=$(($index_func))
+            # >&3 echo $index
+            test -z ${board[index]} && {
+                let board[index]=0
+                return 0
+            }
+        done
+    fi
+    return 1
+}
+
+
 function computer {
-    if (( fail_ldia == 1 )); then
-        >&3 echo "almost LEFT DIAGONAL"
-        for ((i=0; i < BOARD_SIZE; i++)); do
-            local index=$((BOARD_SIZE*i+i))
-            test -z ${board[index]} && {
-                let board[index]=0
-                return
-            }
-        done
-    fi
-
-
-    if (( fail_rdia == 1 )); then
-        >&3 echo "almost RIGHT DIAGONAL"
-        for ((i=0; i < BOARD_SIZE; i++)); do
-            local index=$((BOARD_SIZE*i+BOARD_SIZE-1-i))
-            test -z ${board[index]} && {
-                let board[index]=0
-                return
-            }
-        done
-    fi
-
+    check_almost $fail_ldia "BOARD_SIZE*i+i" "LEFT DIAGONAL" && return
+    check_almost $fail_rdia "BOARD_SIZE*i+M-i" "RIGHT DIAGONAL" && return
+    for ((i=0; i < BOARD_SIZE; i++)); do
+        check_almost ${fail_hor_array[i]} "BOARD_SIZE*$i+i" "HORIZONTAL $i" && return
+        check_almost ${fail_ver_array[i]} "BOARD_SIZE*i+$i" "VERTICLE $i" && return
+    done
     random_move
 }
 
@@ -205,13 +218,15 @@ function game_loop {
             exit
         }
         computer
+        >&3 echo
         check_endgame
     done
 }
 
 declare moves=0 tiles=0
 trap "board_banner 'GAME OVER'; exit" INT #handle INTERRUPT
-let N="BOARD_SIZE * BOARD_SIZE"
+N=$((BOARD_SIZE*BOARD_SIZE))
+M=$((BOARD_SIZE-1))
 board_init $BOARD_SIZE
 echo -n $'\e'"[?9h" # enable-mouse
 exec 2>&3 # redirecting errors
