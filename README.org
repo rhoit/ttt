@@ -3,6 +3,9 @@
 #+STARTUP: showall
 
 Bash implementation of classic tic-tac-toe with basic ai.
+
+[[https://upload.wikimedia.org/wikipedia/commons/thumb/3/32/Tic_tac_toe.svg/270px-Tic_tac_toe.svg.png]]
+
 * Installation
 
 ** Manual
@@ -15,23 +18,33 @@ Bash implementation of classic tic-tac-toe with basic ai.
    | [[https://github.com/bekar/ASCII-board][ASCII-board]] | depends  |
    | figlet      | optional |
 
-    #+begin_src bash
-      $ cd path-to-ttt
-      $ ./configure
-      $ sudo make install
-    #+end_src
+
+   #+BEGIN_EXAMPLE
+     $ cd path-to-ttt
+     $ ./configure
+     $ sudo make install
+   #+END_EXAMPLE
+
 
 * Playing
 
-  #+BEGIN_SRC language
+  #+BEGIN_EXAMPLE
     $ ttt
-  #+END_SRC
-  
-  Want to play infinity and beyond ? 
- #+BEGIN_SRC bash
-   while ttt; do; echo "retrying again... LETS GO INSANE"; done
- #+END_SRC
- I guess, ~Ctrl + z~ is only way to exit and kill the program, do fg and ~Ctrl + c~ :P 
- Yes, that's insane. Bet you can, beat this bash_AI
+  #+END_EXAMPLE
+
   use mouse to play.
 
+** play infinity and beyond
+
+   #+BEGIN_EXAMPLE
+     while ttt; do; echo "retrying again... LETS GO INSANE"; done
+   #+END_EXAMPLE
+
+   To exit the loop supend the process using =Ctrl + z=, then =fg= and
+   =Ctrl + c=. Will help you to beat AI.
+
+** Optimal Play
+
+   [[http://imgs.xkcd.com/comics/tic_tac_toe.png]]
+
+   source: [[http://xkcd.com/832/]]
