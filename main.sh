@@ -44,7 +44,7 @@ done
 
 header="\033[1m$__PKG_NAME__\033[m (https://github.com/rhoit/ttt)"
 
-export WD_BOARD="$WD/ASCII-board"
+export WD_BOARD=${WD_BOARD:-"$WD/ASCII-board"}
 source $WD_BOARD/board.sh
 
 # modifying board
@@ -224,6 +224,7 @@ function game_loop {
         }
     done
 }
+
 
 declare moves=0 tiles=0
 trap "board_banner 'GAME OVER'; exit" INT #handle INTERRUPT
