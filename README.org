@@ -25,7 +25,6 @@ Bash implementation of classic tic-tac-toe with basic ai.
      $ sudo make install
    #+END_EXAMPLE
 
-
 * Playing
 
   #+BEGIN_EXAMPLE
