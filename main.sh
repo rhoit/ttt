@@ -103,7 +103,6 @@ function check_endgame {
         vtile=${board[i]:-"a$i"}
 
         for ((j=0; j < BOARD_SIZE; j++)); do
-            ## making unique
             rval=${board[rindex]:-"a$rindex"}
 
             ## horizontals: board[i][0] <cmp> board[i][j]
@@ -130,7 +129,7 @@ function check_endgame {
             ## right diagonal: board[0][max] <cmp> board[i][BOARD_SIZE-j]
             (( i == M - j )) && [[ "$rdia" != $rval ]] && {
                 let fail_rdia++
-                rdia=${board[0]:-"$rval"}
+                rdia=${board[M]:-"$rval"}
             }
 
             let rindex++
@@ -161,29 +160,50 @@ function random_move {
 function check_almost { #$1: count $2: index_func $3: msg
     # block or complete
     local count=$1 index_func=$2 msg=$3
-    if (( count == 1 )); then
-        >&3 echo "almost $msg"
-        for ((i=0; i < BOARD_SIZE; i++)); do
-            local index=$(($index_func))
-            >&3 echo $index
-            test -z ${board[index]} && {
-                let board[index]=0
-                let tiles++
-                return 0
-            }
-        done
-    fi
-    return 1
+    (( count > 1 )) && return
+
+    new_priority=0
+    for ((i=0; i < BOARD_SIZE; i++)); do
+        local index=$(($index_func))
+        if test -z ${board[index]}; then
+            if (( new_priority == 0 )); then
+                let i++
+                local m=$(($index_func))
+                let new_priority=$((board[m]==0?10:1))
+                >&3 echo "get priority by index correction $index -> $m"
+            fi
+            if (( new_priority >= priority )); then
+                priority=$new_priority
+                ai_move=$index
+                >&3 echo "almost $msg ai_suggest: $ai_move"
+            fi
+            return
+        fi
+        new_priority=$((board[index]==0?10:1))
+    done
 }
 
 
 function computer {
-    check_almost $fail_ldia "BOARD_SIZE*i+i" "LEFT DIAGONAL" && return
-    check_almost $fail_rdia "BOARD_SIZE*i+M-i" "RIGHT DIAGONAL" && return
+    declare -i ai_move=-1 priority=-1
+    check_almost $fail_ldia "BOARD_SIZE*i+i" "LEFT DIAGONAL"
+    check_almost $fail_rdia "BOARD_SIZE*i+M-i" "RIGHT DIAGONAL"
     for ((c=0; c < BOARD_SIZE; c++)); do
-        check_almost ${fail_hor_array[c]} "BOARD_SIZE*$c+i" "HORIZONTAL $c" && return
-        check_almost ${fail_ver_array[c]} "BOARD_SIZE*i+$c" "VERTICLE $c" && return
+        check_almost ${fail_hor_array[c]} "BOARD_SIZE*$c+i" "HORIZONTAL $c"
+        check_almost ${fail_ver_array[c]} "BOARD_SIZE*i+$c" "VERTICLE $c"
     done
+    >&3 echo ai_move: $ai_move
+    if (( ai_move >= 0 )); then
+        let board[ai_move]=0
+        let tiles++
+        return
+    fi
+
+    if test -z ${board[mid]}; then
+        board[$mid]=0
+        let tiles++
+        return
+    fi
     random_move
 }
 
@@ -230,6 +250,7 @@ declare moves=0 tiles=0
 trap "board_banner 'GAME OVER'; exit" INT #handle INTERRUPT
 N=$((BOARD_SIZE*BOARD_SIZE))
 M=$((BOARD_SIZE-1))
+mid=$((N/2))
 board_init $BOARD_SIZE
 echo -n $'\e'"[?9h" # enable-mouse
 exec 2>&3 # redirecting errors
